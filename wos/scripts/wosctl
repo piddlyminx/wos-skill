@@ -79,6 +79,145 @@ import argparse
 import json
 import logging
 
+# ── onboarding: runs BEFORE any emulator imports ─────────────────────────────
+_CONFIG_PATH = _SKILL_DIR / "config.json"
+
+
+def _onboarding_discover_instances(mumu_manager: str) -> list[str]:
+    """Run MuMuManager to discover emulator instance names.
+
+    This is a standalone implementation that does not depend on emulator.py,
+    since config.json does not exist yet when onboarding runs.
+    """
+    import glob as _glob
+    import subprocess as _subprocess
+
+    env = os.environ.copy()
+    # Find WSL_INTEROP socket so the Windows exe can be invoked from WSL
+    interop = env.get("WSL_INTEROP")
+    if not interop or not os.path.exists(interop):
+        sockets = sorted(_glob.glob("/run/WSL/*_interop"), reverse=True)
+        if sockets:
+            interop = sockets[0]
+    if interop:
+        env["WSL_INTEROP"] = interop
+
+    try:
+        result = _subprocess.run(
+            [mumu_manager, "info", "--vmindex", "all"],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd="/mnt/c/Windows/System32",
+            timeout=15,
+        )
+        raw = (result.stdout + result.stderr).strip()
+    except Exception as exc:
+        print(f"\n  Could not run MuMuManager: {exc}")
+        return []
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        print(f"\n  Could not parse MuMuManager output.")
+        return []
+
+    # data is a dict keyed by string index, each value has a "name" field
+    names: list[str] = []
+    if isinstance(data, dict):
+        for _key, info in sorted(data.items()):
+            name = str(info.get("name", "")).strip()
+            if name:
+                names.append(name)
+    return names
+
+
+def _run_onboarding() -> None:
+    """Interactive first-time setup. Writes config.json when it does not exist.
+
+    Only runs when stdin is a TTY so non-interactive invocations fall through
+    to the existing silent-defaults behavior in emulator.py.
+    """
+    if _CONFIG_PATH.exists():
+        return
+    if not sys.stdin.isatty():
+        return
+
+    default_mumu = "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe"
+
+    print()
+    print("=" * 68)
+    print("  Welcome to wosctl -- first-time setup")
+    print("=" * 68)
+    print()
+    print("  No config.json was found. This wizard will create one for you.")
+    print()
+
+    # -- mumu_manager path --
+    print(f"  MuMuManager path [{default_mumu}]:")
+    raw_mumu = input("  > ").strip()
+    mumu_manager = raw_mumu if raw_mumu else default_mumu
+
+    # -- simulator_dir --
+    print()
+    print("  Path to the wos-simulator project (leave blank to skip):")
+    simulator_dir = input("  > ").strip()
+
+    # -- discover instances --
+    print()
+    print("  Discovering emulator instances via MuMuManager ...")
+    instance_names = _onboarding_discover_instances(mumu_manager)
+
+    instances: dict[str, dict[str, str]] = {}
+    if instance_names:
+        print(f"  Found {len(instance_names)} instance(s): {', '.join(instance_names)}")
+        print()
+        print("  For each instance, enter an alliance TAG (used for both healing")
+        print("  and battling). Press Enter to skip an instance.")
+        print()
+        for name in instance_names:
+            tag = input(f"  Alliance TAG for '{name}': ").strip().upper()
+            if tag:
+                instances[name] = {
+                    "heal_alliance": tag,
+                    "battle_alliance": tag,
+                }
+    else:
+        print("  No instances discovered. You can add them to config.json later.")
+
+    # -- build config --
+    config: dict = {
+        "mumu_manager": mumu_manager,
+        "package": "com.gof.global",
+        "activity": "com.unity3d.player.MyMainPlayerActivity",
+        "timeouts": {
+            "emulator_boot_sec": 120,
+            "android_ready_sec": 60,
+            "app_launch_sec": 45,
+            "adb_connect_sec": 10,
+        },
+    }
+    if simulator_dir:
+        config["simulator_dir"] = simulator_dir
+    if instances:
+        config["instances"] = instances
+
+    _CONFIG_PATH.write_text(json.dumps(config, indent=2) + "\n")
+
+    print()
+    print(f"  Config written to {_CONFIG_PATH}")
+    print()
+    print("  To get started, drop this skill directory into the skills directory")
+    print("  of your preferred AI coding agent (like Claude Code) and you should")
+    print("  be good to set it upon the task of running battles to add as")
+    print("  testcases to help validate simulator behavior.")
+    print()
+    print("=" * 68)
+    print()
+
+
+_run_onboarding()
+
 # ── ensure scripts/ is importable ─────────────────────────────────────────────
 if str(_ENTRY_DIR) not in sys.path:
     sys.path.insert(0, str(_ENTRY_DIR))
