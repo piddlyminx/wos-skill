@@ -29,21 +29,32 @@ logger = logging.getLogger(__name__)
 
 # ─── Paths ─────────────────────────────────────────────────────────────────────
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
+CONFIG_EXAMPLE_PATH = CONFIG_PATH.with_name("config.json.example")
 
 
 def _load_app_config() -> dict:
-    """Load emulator/app config from wos/config.json with conservative defaults."""
-    defaults = {
-        "mumu_manager": "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe",
-        "package": "com.gof.global",
-        "activity": "com.unity3d.player.MyMainPlayerActivity",
-        "timeouts": {
-            "emulator_boot_sec": 120,
-            "android_ready_sec": 60,
-            "app_launch_sec": 45,
-            "adb_connect_sec": 10,
-        },
-    }
+    """Load emulator/app config from wos/config.json with conservative defaults.
+
+    Defaults are read from config.json.example so there is a single source of
+    truth.  If the example file is missing we fall back to minimal hardcoded
+    values.
+    """
+    try:
+        defaults = json.loads(CONFIG_EXAMPLE_PATH.read_text())
+        # Strip the placeholder instances section from the example
+        defaults.pop("instances", None)
+    except (json.JSONDecodeError, OSError, FileNotFoundError):
+        defaults = {
+            "mumu_manager": "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe",
+            "package": "com.gof.global",
+            "activity": "com.unity3d.player.MyMainPlayerActivity",
+            "timeouts": {
+                "emulator_boot_sec": 120,
+                "android_ready_sec": 60,
+                "app_launch_sec": 45,
+                "adb_connect_sec": 10,
+            },
+        }
     if not CONFIG_PATH.exists():
         return defaults
 

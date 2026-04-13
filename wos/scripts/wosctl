@@ -81,6 +81,7 @@ import logging
 
 # ── onboarding: runs BEFORE any emulator imports ─────────────────────────────
 _CONFIG_PATH = _SKILL_DIR / "config.json"
+_CONFIG_EXAMPLE_PATH = _CONFIG_PATH.with_name("config.json.example")
 
 
 def _onboarding_discover_instances(mumu_manager: str) -> list[str]:
@@ -143,7 +144,15 @@ def _run_onboarding() -> None:
     if not sys.stdin.isatty():
         return
 
-    default_mumu = "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe"
+    # Read defaults from the example config (single source of truth)
+    try:
+        _example = json.loads(_CONFIG_EXAMPLE_PATH.read_text())
+    except (json.JSONDecodeError, OSError, FileNotFoundError):
+        _example = {}
+    default_mumu = _example.get(
+        "mumu_manager",
+        "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe",
+    )
 
     print()
     print("=" * 68)
@@ -185,18 +194,10 @@ def _run_onboarding() -> None:
     else:
         print("  No instances discovered. You can add them to config.json later.")
 
-    # -- build config --
-    config: dict = {
-        "mumu_manager": mumu_manager,
-        "package": "com.gof.global",
-        "activity": "com.unity3d.player.MyMainPlayerActivity",
-        "timeouts": {
-            "emulator_boot_sec": 120,
-            "android_ready_sec": 60,
-            "app_launch_sec": 45,
-            "adb_connect_sec": 10,
-        },
-    }
+    # -- build config from example defaults --
+    config: dict = dict(_example)
+    config.pop("instances", None)
+    config["mumu_manager"] = mumu_manager
     if simulator_dir:
         config["simulator_dir"] = simulator_dir
     if instances:
