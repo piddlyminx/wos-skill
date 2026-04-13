@@ -1,0 +1,29 @@
+{
+  "model_name": "arabic_PP-OCRv3_mobile_rec",
+  "model_type": "recognition",
+  "framework": "PaddleOCR",
+  "version": "PP-OCRv3",
+  "version_note": "Legacy model - PP-OCRv3 (not PP-OCRv5)",
+  "language_group": "arabic",
+  "supported_languages": [
+    "Arabic",
+    "Urdu",
+    "Persian/Farsi"
+  ],
+  "script": "Arabic",
+  "description": "PP-OCRv3 Arabic script recognition (Arabic, Urdu, Persian)",
+  "original_format": "PaddlePaddle",
+  "converted_format": "ONNX",
+  "opset_version": 11,
+  "dictionary_file": "arabic_dict.txt",
+  "input_shape": "dynamic (batch_size, 3, 32, dynamic_width)",
+  "output_shape": "dynamic (batch_size, sequence_length, num_classes)",
+  "source": "https://github.com/PaddlePaddle/PaddleOCR",
+  "usage": {
+    "library": "onnxruntime",
+    "note": "Use with PP-OCRv3_mobile_det detection model",
+    "preprocessing": "Grayscale or RGB image, resized to height=32, normalized",
+    "postprocessing": "CTC decoding with character dictionary",
+    "dictionary_format": "One character per line, UTF-8 encoding"
+  }
+}
