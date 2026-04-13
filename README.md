@@ -4,9 +4,10 @@ An AI agent skill for automating Whiteout Survival (WOS) on Android emulators vi
 
 ## Requirements
 
-- **WSL2** on Windows
+- **Windows** (native or WSL2)
 - **MuMu Player** with one emulator instance per game account you want to control
 - **ADB** available on PATH
+- **[uv](https://docs.astral.sh/uv/)** for Python dependency management
 - An AI coding agent that supports skill directories
 
 ## Setup
