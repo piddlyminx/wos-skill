@@ -29,48 +29,19 @@ logger = logging.getLogger(__name__)
 
 # ─── Paths ─────────────────────────────────────────────────────────────────────
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
-CONFIG_EXAMPLE_PATH = CONFIG_PATH.with_name("config.json.example")
 
 
 def _load_app_config() -> dict:
-    """Load emulator/app config from wos/config.json with conservative defaults.
+    """Load emulator/app config from wos/config.json.
 
-    Defaults are read from config.json.example so there is a single source of
-    truth.  If the example file is missing we fall back to minimal hardcoded
-    values.
+    Raises FileNotFoundError if config.json is missing — run wosctl
+    interactively first to create it via the onboarding wizard.
     """
-    try:
-        defaults = json.loads(CONFIG_EXAMPLE_PATH.read_text())
-        # Strip the placeholder instances section from the example
-        defaults.pop("instances", None)
-    except (json.JSONDecodeError, OSError, FileNotFoundError):
-        defaults = {
-            "mumu_manager": "/mnt/c/Program Files/Netease/MuMuPlayer/nx_main/MuMuManager.exe",
-            "package": "com.gof.global",
-            "activity": "com.unity3d.player.MyMainPlayerActivity",
-            "timeouts": {
-                "emulator_boot_sec": 120,
-                "android_ready_sec": 60,
-                "app_launch_sec": 45,
-                "adb_connect_sec": 10,
-            },
-        }
     if not CONFIG_PATH.exists():
-        return defaults
-
-    try:
-        loaded = json.loads(CONFIG_PATH.read_text())
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to load %s: %s; using built-in defaults", CONFIG_PATH, exc)
-        return defaults
-
-    cfg = dict(defaults)
-    cfg.update({k: v for k, v in loaded.items() if k != "timeouts"})
-    loaded_timeouts = loaded.get("timeouts")
-    if isinstance(loaded_timeouts, dict):
-        cfg["timeouts"] = dict(defaults["timeouts"])
-        cfg["timeouts"].update(loaded_timeouts)
-    return cfg
+        raise FileNotFoundError(
+            f"{CONFIG_PATH} not found. Run wosctl interactively to create it."
+        )
+    return json.loads(CONFIG_PATH.read_text())
 
 
 _APP_CONFIG = _load_app_config()
