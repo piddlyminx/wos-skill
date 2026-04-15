@@ -21,8 +21,9 @@ Build a battle simulator that perfectly replicates the WOS in-game battle engine
 
 ## Current Baseline
 
-- Overall average error: ~1.48% across 40+ test suites
-- All testcases passing at <5% threshold
+- Overall average error: ~1.64% across 60+ test suites
+- Failing testcases: alonso_solo (7%, known dynamics), wayne_mixed_solo (~11%, WIP data), lynn_solo (5.6%, RNG variance)
+- wayne_s1_solo: resolved, now ~1% ✅
 - Tier 1 meta heroes: Gwen, Hector, Norah, Mia, Lynn, Logan, Reina, Greg, Alonso, Philly, Flint, Jeronimo, Zinman, Molly
 - Tier 2: Renee, Wayne, Wu Ming
 
@@ -32,9 +33,9 @@ Read the files relevant to your current task. The summary tells you what each co
 
 | File | Summary | Read when... |
 |---|---|---|
-| [battle-mechanics.md](knowledge/battle-mechanics.md) | Core battle loop, troop types, **hero class constraint (1 per class per side)**, stat stacking rules, damage coefficient formula, non-linear dynamics | You need to understand how battles work or why results look the way they do; **always check before writing multi-hero specs** |
-| [hero-skills.md](knowledge/hero-skills.md) | Skill properties, effect_op grouping, targeting keywords, special field mechanisms, two-phase activation, dodge, CSV format, implementing new heroes | You are implementing, debugging, or reviewing hero skill definitions |
-| [known-issues.md](knowledge/known-issues.md) | Active divergences and resolved investigations with root causes. **Active now: Alonso TC1 dynamics, Alonso solo stats, Reina borderline, attack-frequency timing (Lynn).** | **Check FIRST before writing any code** to investigate a divergence — it may already be known and documented |
+| [battle-mechanics.md](knowledge/battle-mechanics.md) | Core battle loop, troop types, **hero class constraint (1 per class per side)**, stat stacking rules, **damage coefficient formula (base/extra/normal_only layers, additive combination, dodge interaction)**, extra-attack non-primary targeting, non-linear dynamics | You need to understand how battles work or why results look the way they do; **always check before writing multi-hero specs** |
+| [hero-skills.md](knowledge/hero-skills.md) | Skill properties, effect_op grouping, targeting keywords (`benefit_vs` controls extra-attack fan-out + regular effect scope), `trigger_for: "once"` deprecated, special field mechanisms, two-phase activation, dodge, CSV format, implementing new heroes | You are implementing, debugging, or reviewing hero skill definitions |
+| [known-issues.md](knowledge/known-issues.md) | Active divergences and resolved investigations with root causes. **Active now: Alonso solo stats, Wayne mixed troops, Reina borderline.** | **Check FIRST before writing any code** to investigate a divergence — it may already be known and documented |
 | [debugging.md](knowledge/debugging.md) | Data-before-code methodology, bug location priority, error metrics, statistical significance checklist | You are investigating a failing testcase or unexpected results |
 | [testcases.md](knowledge/testcases.md) | Spec vs testcase distinction, one-way nature, integrity rules, good testcase design, output schema, delegation checklists, interpreting results, regression rule | You are creating, running, or interpreting testcases |
 | [wosctl-operations.md](knowledge/wosctl-operations.md) | Golden rules, run-testcase automation, instance config, common workflows, hero template registration, troubleshooting | You are running emulator commands or diagnosing wosctl issues |
@@ -56,4 +57,4 @@ When you complete a task that yields reusable insights:
 3. **Update this index if needed.** If your change alters the scope of a topic file (e.g., it now covers something new), update the summary in the table above. If you create a new topic file, add a row to the table.
 4. **Never let the index go stale.** The index is the entry point for all agents. If it doesn't accurately describe what's in each file, agents will miss relevant information or waste time reading irrelevant files. Treat index accuracy as a first-class responsibility --- as important as the knowledge itself.
 
-*Last updated: 2026-04-12*
+*Last updated: 2026-04-15 (benefit_vs/trigger_for semantics cleanup, extra_vs_all removed, additive damage formula)*

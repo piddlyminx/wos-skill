@@ -45,18 +45,47 @@ Each side has stat bonuses (e.g., `infantry_attack: 1774.5`) visible in the Batt
 
 ## Damage Coefficient Formula
 
+Each round, each unit type's damage is multiplied by a coefficient built from three layers:
+
 ```
-damage_coefficient = (damageUp x oppDefenseDown) / (defenseUp x oppDamageDown)
+final_coef = base * (extra + normal_only - 1)
 ```
 
-Each component is a multiplicative product of all active effects of that type.
+- **base** --- Standard buffs/debuffs (the default bucket for most hero effects).
+- **normal_only** --- Effects flagged `only_normal` in their `special` field. Only affect the normal attack, not extra attacks. Currently only Reina uses this.
+- **extra** --- Extra-attack effects (`extra_attack: true`). Bonus attacks on top of the normal hit.
+
+The combination is **additive** between normal_only and extra, not multiplicative. This ensures `only_normal` buffs don't leak into extra-attack damage.
+
+Each layer is computed as:
+
+```
+layer_coef = (damageUp x oppDefenseDown) / (defenseUp x oppDamageDown)
+```
+
+Each component is a multiplicative product of all active effects of that type, grouped by `effect_op`.
+
+### Extra attacks against non-primary targets
+
+Extra-attack benefits can target enemy types beyond the primary target, controlled by `benefit_vs`:
+
+- `benefit_vs: "target"` --- extra attack hits primary target only (Mia, Molly, Bahiti, etc.)
+- `benefit_vs: "all"` --- extra attack fans out to ALL enemy types (Norah S2)
+- `benefit_vs: "lancer"` etc. --- extra attack hits that specific type (Wayne S2)
+
+After computing primary-target damage, `calc_round_kills` runs a second pass over non-primary enemy types, evaluating extra-attack benefits via the normal `is_valid` check. Benefits with `benefit_vs: "target"` naturally fail for non-primary types.
+
+### Dodge interaction
+
+- `dodging = 2` (full dodge): `coef = 0` (all damage blocked)
+- `dodging = 1` (normal-only dodge): `coef = base * (extra - 1)` (normal attack blocked, only extra attacks land)
+- `dodging = 0` (no dodge): `coef = base * (extra + normal_only - 1)` (full formula)
 
 ## Non-Linear Dynamics (sqrt(troops) Effect)
 
-The simulator uses a sqrt(troops) approximation model. In **close/tipping-point battles** (where the winner barely wins), small skill buffs can trigger complete winner flips due to non-linear amplification. This is an inherent property of the model, not a bug, but it means:
-- Tipping-point scenarios amplify errors dramatically
-- Small percentage changes in skill effects can cause disproportionate changes in outcomes
-- This is the root cause of the Alonso TC1 issue (see known-issues.md)
+The simulator uses a sqrt(troops) approximation model — the same model the game uses. In **close/tipping-point battles** (where the winner barely wins), small skill buffs can trigger complete winner flips due to non-linear amplification. This is an inherent property of both the game and the model.
+
+**This is NOT a valid explanation for simulator divergence.** Both the game and simulator implement the same mechanics. If results diverge, the cause is a difference in skill implementation, not the dynamics model itself. Do not use "dynamics amplification" as a root-cause explanation.
 
 ---
 

@@ -47,8 +47,9 @@ Each skill contains one or more **effects**:
 
 ## `trigger_for` Subtle Values
 
-- **`once`** --- Effect can only ACTIVATE once per round, but can be attempted multiple times across unit-vs-unit pairs.
-- **`first`** --- Effect can only be ATTEMPTED once per round; stops all further checks after the very first attempt regardless of whether it activates. Stricter than `once`. Use when the skill itself should fire at most once per round no matter how many unit types attack.
+- **`all`** --- Effect triggers for each unit type independently. Each creates its own benefit. Preferred over `once` for skills that buff all troops --- use with `benefit_for: "trigger"` so each unit type gets a correctly-scoped benefit.
+- **`first`** --- Effect can only be ATTEMPTED once per round; stops all further checks after the very first attempt regardless of whether it activates. Use when the skill itself should fire at most once per round no matter how many unit types attack.
+- **`once`** --- **Deprecated; replaced with `"all"` + `benefit_for: "trigger"`.** Previously, `once` created a single shared benefit for all unit types. This caused `benefit_vs: "target"` to lock `vs_units` to one enemy type at creation time, breaking targeting for other unit types. The replacement creates per-unit benefits with correctly scoped `vs_units`.
 
 ## Effect Operation Codes (`effect_op`)
 
@@ -61,12 +62,27 @@ This is the only thing `effect_op` controls. It does NOT control extra_attack be
 
 Common values in use: `101` (35 effects), `111` (13), `102` (8), `201` (5), `113` (4), `202` (3).
 
-## Extra Damage Mechanics (`extra_vs_all`)
+## Extra Attack Targeting (`benefit_vs`)
 
-When a skill says "X% extra damage against all enemy troop types": the extra damage hits **all** enemy troop types simultaneously, including the primary target of the triggering attack. This has been **confirmed correct** via in-game battle detail analysis:
+Extra-attack fan-out is controlled by the standard `benefit_vs` field, not a special flag. The `benefit_vs` value determines which enemy types the extra attack hits:
+
+- `"target"` --- hit primary target only (e.g. Mia S2, Molly S2, Bahiti S2, Alonso S3)
+- `"all"` --- hit ALL enemy types simultaneously (e.g. Norah S2, Gwen S3)
+- specific type (`"lancer"`, `"marksmen"`, etc.) --- hit that type only (e.g. Wayne S2)
+
+Fan-out to all enemy types has been **confirmed correct** via in-game battle detail analysis:
 - Primary target IS hit by extra damage (confirmed: Norah S2 in infantry-only scenario attributed S2 kills to infantry --- the only target available)
 - Non-primary types ARE also hit (confirmed: marksmen took casualties from lancer-based S2 while infantry line was still standing --- impossible without fan-out)
-- `extra_vs_all` can be `true` (scale factor = 1.0) or a numeric value (custom scale for fan-out damage). Set in the effect's `special` field.
+
+**Important:** When an extra attack should only hit whoever the unit is already fighting, use `benefit_vs: "target"`, NOT `"all"`. Using `"all"` causes the extra attack to fan out to all enemy types.
+
+## `benefit_vs` Semantics for Regular Effects
+
+For non-extra-attack effects, `benefit_vs` controls which enemy types the benefit is valid against:
+
+- **Offensive effects** (`DamageUp`, `OppDefenseDown`): use `"target"` --- the buff applies to damage against whichever enemy you're fighting.
+- **Defensive effects** (`DefenseUp`, `OppDamageDown`, `Dodge`, `StatBonus`): use `"all"` --- the defense works regardless of which enemy is attacking you.
+- **Exception: Alonso S2 (Iron Strength)** uses `"target"` despite being `OppDamageDown` --- empirically verified (WOS-99). Using `"all"` produces 184% error.
 
 ## `special` Field Mechanisms
 
@@ -74,7 +90,6 @@ The `special` dict on an effect enables advanced behaviors not covered by the st
 
 | Key | Meaning |
 |---|---|
-| `extra_vs_all` | `true` or float --- fan extra-attack damage to all non-primary enemy types (see above) |
 | `hp_threshold` | `{"above": N}` or `{"below": N}` --- skill only fires when own army HP% is above/below N |
 | `only_normal` | If present, benefit applies to normal attacks only --- extra attacks bypass it. Used to limit dodge vs. extra-attack interaction |
 | `onDefense` | If `true`, skill triggers on the opponent's attack phase (defensive timing) rather than your attack phase |
