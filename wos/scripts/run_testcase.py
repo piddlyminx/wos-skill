@@ -331,23 +331,33 @@ def run_testcase(spec_path: str, dry_run: bool = False) -> dict:
     this_run_def_stats = emulator_result["defender_stats"]
     # Use ACTUAL troop counts from war report, not the spec — the player may not
     # have had enough troops to fill the requested amount.
-    def _report_troops_to_sim(troop_power: dict) -> dict:
-        """Convert war report troop_power {infantry:N, lancer:N, marksman:N} to sim format."""
+    def _report_troops_to_sim(troop_power: dict, spec_troops: dict) -> dict:
+        """Convert war report troop_power {infantry:N, lancer:N, marksman:N} to sim format.
+
+        Uses spec_troops to infer the tier suffix for each troop type, so the
+        mismatch check works correctly for non-T6 specs.
+        """
+        type_to_key: dict[str, str] = {}
+        for key in spec_troops:
+            for prefix in ("infantry", "lancer", "marksman"):
+                if key.startswith(prefix + "_"):
+                    type_to_key[prefix] = key
+                    break
         return {
-            "infantry_t6": troop_power.get("infantry", 0),
-            "lancer_t6": troop_power.get("lancer", 0),
-            "marksman_t6": troop_power.get("marksman", 0),
+            type_to_key.get("infantry", "infantry_t6"): troop_power.get("infantry", 0),
+            type_to_key.get("lancer", "lancer_t6"): troop_power.get("lancer", 0),
+            type_to_key.get("marksman", "marksman_t6"): troop_power.get("marksman", 0),
         }
 
-    this_run_troops_att = _report_troops_to_sim(atk_rep.get("troop_power", {}))
-    this_run_troops_def = _report_troops_to_sim(def_rep.get("troop_power", {}))
+    spec_att = spec["attacker"]["troops"]
+    spec_def = spec["defender"]["troops"]
+    this_run_troops_att = _report_troops_to_sim(atk_rep.get("troop_power", {}), spec_att)
+    this_run_troops_def = _report_troops_to_sim(def_rep.get("troop_power", {}), spec_def)
 
     # Sanity check: FAIL if actual troops differ from spec — the player didn't have
     # enough troops, so the battle wasn't what we intended to test.
     # Strip zero values from actual so sparse specs (e.g. {"infantry_t6": 1000}) compare
     # correctly against the report which always includes all troop types.
-    spec_att = spec["attacker"]["troops"]
-    spec_def = spec["defender"]["troops"]
     actual_att_nonzero = {k: v for k, v in this_run_troops_att.items() if v != 0}
     actual_def_nonzero = {k: v for k, v in this_run_troops_def.items() if v != 0}
     troop_mismatch = False
