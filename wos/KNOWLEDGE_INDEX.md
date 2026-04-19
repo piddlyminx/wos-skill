@@ -21,13 +21,12 @@ Build a battle simulator that perfectly replicates the WOS in-game battle engine
 
 ## Current Baseline
 
-- Overall average error: ~1.36% across 149 testcases (run 2026-04-18 22:05Z, after WOS-154 new combos added)
-- **Resolved 2026-04-19**: WOS-160 `lynn_solo` widget-state data gap — entry `_1` renamed to `lynn_solo_balanced`, waived in `KNOWN_ISSUE_WAIVERS` (expected +0.93% ±0.5%). Entry `_0` keeps `lynn_solo` id and passes cleanly. Widget-capture pipeline extension tracked as follow-up.
-- **Primary flags (q>0.05, not BH-sig)**: greg_mia_combo (-3.94% t=-2.13 q=0.1816, N_game=4 — needs 5th run), Mia_tc daut_viper_2 (-1.51% t=-2.56 q=0.1345), norah_s2_inf_only_A (-0.74% t=-2.73 q=0.1039), hector_renee_wayne (+0.82% N_game=1), natalia_solo (-1.20% N_game=1)
-- Waived (documented in known-issues.md): Alonso_tc daut_viper_1 (-1.68% t~-16.83), Alonso_tc daut_viper_2 (+0.85% t~+5.29) — CEO accept-residual 2026-04-18 (WOS-136); regressions still surface via waiver-lapse tolerance.
-- Added 2026-04-18 (WOS-154): gwen_norah_combo_nc ✅, greg_mia_combo (N=4, needs 5th run), plus many new combos from QA: alonso_norah, logan_lynn, logan_reina_bahiti, molly_lynn, norah_greg, norah_hector_zinman, reina_bahiti
-- Resolved 2026-04-18: Attack-frequency off-by-one (WOS-153) — alonso_solo#0 bias +19.52% → +2.64%
+- Overall average error: ~1.42% across 137 testcases (flags drop from 7 → 5 after WOS-136 accept-residual waiver)
+- Failing testcases: lynn_solo (+0.85% t=+3.17), Mia_tc daut_viper_2 (-1.37% t=-2.28, borderline), norah_s2_inf_only_A (-0.66% t=-2.73, small N_game=4)
+- Waived (documented in known-issues.md): Alonso_tc daut_viper_1 (-1.67% t=-16.79), Alonso_tc daut_viper_2 (+0.88% t=+5.48) — CEO accept-residual 2026-04-18; regressions still surface via waiver-lapse tolerance in `check_testcases.py`.
+- Resolved 2026-04-18: Attack-frequency off-by-one (WOS-153) — alonso_solo#0 bias +19.52% → +2.64%, flag count 8 → 7.
 - wayne_mixed_solo: resolved — RNG-borderline at N=100, passes robustly at `--repeat 300` ✅ (WOS-140)
+- wayne_s1_solo: resolved, now ~1% ✅
 - Tier 1 meta heroes: Gwen, Hector, Norah, Mia, Lynn, Logan, Reina, Greg, Alonso, Philly, Flint, Jeronimo, Zinman, Molly
 - Tier 2: Renee, Wayne, Wu Ming
 
@@ -61,4 +60,4 @@ When you complete a task that yields reusable insights:
 3. **Update this index if needed.** If your change alters the scope of a topic file (e.g., it now covers something new), update the summary in the table above. If you create a new topic file, add a row to the table.
 4. **Never let the index go stale.** The index is the entry point for all agents. If it doesn't accurately describe what's in each file, agents will miss relevant information or waste time reading irrelevant files. Treat index accuracy as a first-class responsibility --- as important as the knowledge itself.
 
-*Last updated: 2026-04-18 (WOS-154 new combo data added; baseline refreshed; WOS-160 lynn_solo re-investigation opened)*
+*Last updated: 2026-04-18 (WOS-136 accept-residual: Alonso_tc daut_viper_1/2 whitelisted as documented structural limitation)*
