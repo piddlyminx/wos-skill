@@ -305,6 +305,7 @@ def find_empty_tile(emulator: WosEmulator) -> tuple[int, int]:
     # Do multiple passes over the probe set before giving up.
     for pass_num in range(1, 4):
         logger.info("find_empty_tile: probe pass %d/3", pass_num)
+        world_x, world_y = None, None
         for tap_x, tap_y in _TILE_PROBE_COORDS:
             logger.info("find_empty_tile: probing (%d,%d)", tap_x, tap_y)
             emulator.tap(tap_x, tap_y)
@@ -603,7 +604,7 @@ def deploy_army(emulator: WosEmulator, army_spec: dict) -> dict:
 
             # Guard: ensure we're still on the deploy screen (Preset tab should be present)
             img_guard = emulator.screencap_bgr()
-            preset_ok, _ = find_template(img_guard, TPL_PRESET1, threshold=0.80)
+            preset_ok, _ = find_template(img_guard, TPL_PRESET1, threshold=0.65)
             if not preset_ok:
                 raise WosDispatchError("deploy_army: lost deploy screen while searching troop rows (Preset1 not visible)")
 
