@@ -11,6 +11,7 @@
   },
   "instances": {
     "MyInstance": {
+      "disabled": false,
       "heal_alliance": "TAG",
       "battle_alliance": "TAG"
     }

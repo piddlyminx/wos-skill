@@ -181,16 +181,20 @@ def _run_onboarding() -> None:
     if instance_names:
         print(f"  Found {len(instance_names)} instance(s): {', '.join(instance_names)}")
         print()
-        print("  For each instance, enter an alliance TAG (used for both healing")
-        print("  and battling). Press Enter to skip an instance.")
+        print("  For each instance, enter alliance TAGs for healing and battling.")
+        print("  Press Enter to skip an instance entirely.")
         print()
         for name in instance_names:
-            tag = input(f"  Alliance TAG for '{name}': ").strip().upper()
-            if tag:
-                instances[name] = {
-                    "heal_alliance": tag,
-                    "battle_alliance": tag,
-                }
+            heal_tag = input(f"  Healing alliance TAG for '{name}': ").strip().upper()
+            if not heal_tag:
+                continue
+            battle_tag = input(f"  Battle alliance TAG for '{name}' [{heal_tag}]: ").strip().upper()
+            if not battle_tag:
+                battle_tag = heal_tag
+            instances[name] = {
+                "heal_alliance": heal_tag,
+                "battle_alliance": battle_tag,
+            }
     else:
         print("  No instances discovered. You can add them to config.json later.")
 
@@ -230,6 +234,7 @@ from emulator import (
     WosError,
     WosEmulator,
     adb_ping,
+    is_instance_disabled,
     list_instances,
     wos_is_foreground,
     resolve_instance,
@@ -288,7 +293,17 @@ def _resolve_emulator(instance_name: str) -> WosEmulator:
 
 
 def _available_instance_names() -> list[str]:
-    """Return MuMu instance names, excluding unnamed slots."""
+    """Return control-eligible MuMu instance names, excluding unnamed/disabled slots."""
+    return [
+        str(info.get("name")).strip()
+        for info in list_instances()
+        if str(info.get("name", "")).strip()
+        and not is_instance_disabled(str(info.get("name")).strip())
+    ]
+
+
+def _named_instance_names() -> list[str]:
+    """Return all named MuMu instances, including disabled ones."""
     return [
         str(info.get("name")).strip()
         for info in list_instances()
@@ -312,6 +327,18 @@ def _require_instance_name(instance_name: str | None) -> str:
         choices = ", ".join(names)
         raise WosError(
             f"--instance <name> is required for this command. Available instances: {choices}"
+        )
+
+    try:
+        all_names = _named_instance_names()
+    except WosError as exc:
+        raise WosError(
+            f"--instance <name> is required. MuMuManager lookup failed while listing instances: {exc}"
+        ) from exc
+
+    if all_names:
+        raise WosError(
+            "--instance <name> is required for this command, but all named instances are disabled in config.json"
         )
 
     raise WosError(
@@ -373,6 +400,7 @@ def _probe_status(info: dict) -> dict:
         "instance_idx": idx,
         "serial": serial,
         "adb_port": adb_port,
+        "control_disabled": is_instance_disabled(instance_name),
         "emulator_running": emulator_running,
         "adb_connected": adb_connected,
         "adb_restarted": adb_restarted,

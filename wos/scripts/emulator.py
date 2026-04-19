@@ -59,6 +59,33 @@ class WosError(Exception):
     """Base error for all wos emulator/ADB failures."""
 
 
+def get_instance_config(name: str) -> dict:
+    """Return the config block for an instance name, matched case-insensitively."""
+    instances = _APP_CONFIG.get("instances", {})
+    if not isinstance(instances, dict):
+        return {}
+
+    normalized_name = name.strip().lower()
+    for instance_name, config in instances.items():
+        if str(instance_name).strip().lower() != normalized_name:
+            continue
+        return config if isinstance(config, dict) else {}
+    return {}
+
+
+def is_instance_disabled(name: str) -> bool:
+    """Return True when an instance is marked as unavailable for control."""
+    return bool(get_instance_config(name).get("disabled", False))
+
+
+def ensure_instance_enabled(name: str) -> None:
+    """Raise when an instance is marked disabled in config.json."""
+    if is_instance_disabled(name):
+        raise WosError(
+            f"Instance '{name}' is disabled in config.json and should not be used for control"
+        )
+
+
 # ─── WSL interop helper ────────────────────────────────────────────────────────
 def _get_wsl_interop() -> str | None:
     """Find the WSL_INTEROP socket path dynamically.
@@ -664,6 +691,7 @@ def resolve_instance(name: str) -> WosEmulator:
     Raises:
         WosError: if any step fails.
     """
+    ensure_instance_enabled(name)
     idx, port = ensure_running(name)
     serial = f"127.0.0.1:{port}"
     ensure_foreground(serial)
