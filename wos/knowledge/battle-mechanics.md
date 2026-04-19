@@ -21,9 +21,11 @@ Three types: **Infantry**, **Lancer**, **Marksman**. Each has independent attack
 
 **Each side may have at most 1 hero of each class.** WOS enforces this at the game level; the emulator will reject an invalid lineup. The three hero classes are:
 
-- **Infantry** (e.g. Hector, Sergey, Norah, Philly, Greg)
-- **Lancer** (e.g. Mia, Lynn, Alonso, Reina, Flint, Zinman, Molly)
-- **Marksman** (e.g. Bahiti, Logan, Gwen, Jeronimo, Wu Ming, Wayne)
+- **Infantry**: Ahmose, Flint, Hector, Jeronimo, Logan, Natalia, Sergey, WuMing
+- **Lancer**: Jessie, Ling, Lumak, Mia, Molly, Norah, Patrick, Reina, Renee
+- **Marksman**: Alonso, Bahiti, Greg, Gwen, Jasser, Lynn, Seo-yoon, Wayne, Zinman
+
+(Source: verified by game emulator runs in WOS-96. Prior list was incorrect — Norah/Greg/Lynn/Zinman were misclassified.)
 
 Before writing any multi-hero combo spec, verify that no two heroes on the same side share a class. This is the single most common source of invalid specs.
 
@@ -73,7 +75,7 @@ Extra-attack benefits can target enemy types beyond the primary target, controll
 - `benefit_vs: "all"` --- extra attack fans out to ALL enemy types (Norah S2)
 - `benefit_vs: "lancer"` etc. --- extra attack hits that specific type (Wayne S2)
 
-After computing primary-target damage, `calc_round_kills` runs a second pass over non-primary enemy types, evaluating extra-attack benefits via the normal `is_valid` check. Benefits with `benefit_vs: "target"` naturally fail for non-primary types.
+After computing primary-target normal damage, `calc_round_kills` runs a second pass over all enemy types, evaluating extra-attack benefits via the normal `is_valid` check. Benefits with `benefit_vs: "target"` naturally fail for non-primary types.
 
 ### Dodge interaction
 
@@ -83,7 +85,7 @@ After computing primary-target damage, `calc_round_kills` runs a second pass ove
 
 ## Non-Linear Dynamics (sqrt(troops) Effect)
 
-The simulator uses a sqrt(troops) approximation model — the same model the game uses. In **close/tipping-point battles** (where the winner barely wins), small skill buffs can trigger complete winner flips due to non-linear amplification. This is an inherent property of both the game and the model.
+WOS uses sqrt(troops) to determine the power of a unit_type's remaining toops. In **close/tipping-point battles** (where the winner barely wins), small skill buffs can trigger complete winner flips due to non-linear amplification. This is an inherent property of both the game and the model.
 
 **This is NOT a valid explanation for simulator divergence.** Both the game and simulator implement the same mechanics. If results diverge, the cause is a difference in skill implementation, not the dynamics model itself. Do not use "dynamics amplification" as a root-cause explanation.
 

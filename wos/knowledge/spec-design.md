@@ -12,13 +12,14 @@ Before writing a new spec:
 
 1. **Check existing coverage** --- Look in `testcases/emulator_verified/` for `{hero}_solo*.json`. If it exists and passes (<5% error), the solo phase is done; move to combo or skip.
 2. **Verify hero availability** --- Confirm the hero is on the intended instance. Use `player_hero_skills.json` as the source of truth. Some heroes are only available on one account; check before writing a spec. Heroes not available on either account should be deprioritized.
-3. **Identify skill type** --- Check if the hero has any `skill_is_chance: true` skills. If yes, plan for 5+ game runs (40+ for high-variance, 3+ chance skills). If none -> single run is definitive; use `_nc` suffix.
+3. **Identify skill type** --- Check if the hero has any `skill_is_chance: true` skills. If yes, plan for 5+ game runs (up to 10 if high variance, 3+ chance skills). If none -> single run is definitive; use `_nc` suffix.
 4. **Check hero class compatibility** --- For multi-hero specs, confirm no two heroes on the same side share a class (Infantry / Lancer / Marksman). WOS allows at most 1 hero per class per side. Violating this produces an invalid spec the emulator cannot run. See `battle-mechanics.md` for the class list.
 5. **Capture fresh skills** --- Confirm `wosctl capture-hero-skills` has been run recently for both accounts before the battle batch starts.
+6. **Use t6 troops**. Above t6 troops start to have chance skills. This introduces unnecessary noise that makes the test results less reliable.
 
 ## Spec Design Template
 
-Standard solo test: put the hero under test on the **defender side**, clean attacker (no heroes):
+Standard solo test: 
 
 ```json
 {
@@ -30,16 +31,16 @@ Standard solo test: put the hero under test on the **defender side**, clean atta
   },
   "attacker": {
     "heroes": {},
-    "troops": { "lancer_t8": 300 }
+    "troops": { "infantry_t6": 300, "lancer_t6": 300, "marksman_t6": 300 }
   },
   "defender": {
     "heroes": { "HeroName": {} },
-    "troops": { "lancer_t9": 300 }
+    "troops": { "infantry_t6": 300, "lancer_t6": 300, "marksman_t6": 300 }
   }
 }
 ```
 
-Adjust troop type and count so the winner takes 50%+ casualties. Use `_nc` in `test_id` for deterministic tests.
+Adjust troop count so the winner takes 50%+ casualties. 
 
 ## Spec Naming Conventions
 
@@ -55,7 +56,7 @@ Files with `.disabled` extension are broken/retired testcases --- do not use. Fi
 ## Hero Validation Progression
 
 1. **Solo first** --- validates all of a hero's skills in one shot. High value, low cost.
-2. **Mechanic isolation** (if needed) --- single-troop-type spec to isolate a specific skill effect. Only needed when solo results are ambiguous.
+2. **Mechanic isolation** (if needed) --- some skills only have effects either for or vs certain troop types. Running strategic single-troop-type specs is often an effetive way to isolate a certain skill. Particularly useful when it is unclear which skill is causing a divergence.
 3. **Combo tests second** --- 2-3 hero combinations. Only run after solo passes cleanly.
 4. **Combo triggers**: if a hero has a skill that buffs friendly troop types, test with a complementary hero whose troop type would receive the buff.
 
@@ -68,9 +69,7 @@ When designing a batch, aim for:
 
 ## Account Assignment Shorthand
 
-- The **defender account** has more heroes and is the default side for the hero under test.
-- The **attacker account** is the clean baseline (no heroes) in most solo tests.
-- Exceptions: when testing a hero only available on the attacker account, put that hero on the attacker side and use the defender account as the clean baseline.
+- Check the available heroes and their skill levels in `data/player_hero_skills.json`. It often makes sense to assign the weaker player to be the one with hero(es) in a test and leave the other with just plain troops.
 - Instance names are configured in `config.json` --- do not hardcode them in knowledge docs.
 
 ---

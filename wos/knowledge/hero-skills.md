@@ -43,7 +43,7 @@ Each skill contains one or more **effects**:
 
 - **"All"** = all your troops (infantry + lancers + marksmen)
 - **"Friendly"** = all your troops EXCEPT the triggering unit's troop type
-- Always verify `benefit_for` targets the right scope --- `"trigger"` means only the triggering unit's type, `"all"` means all troop types
+- Always verify `benefit_for` targets the right scope --- `"trigger"` means only the triggering unit's type, `"all"` means all troop types (ie splash), `"any"` means for any troop type that is getting hit/
 
 ## `trigger_for` Subtle Values
 
@@ -68,13 +68,14 @@ Extra-attack fan-out is controlled by the standard `benefit_vs` field, not a spe
 
 - `"target"` --- hit primary target only (e.g. Mia S2, Molly S2, Bahiti S2, Alonso S3)
 - `"all"` --- hit ALL enemy types simultaneously (e.g. Norah S2, Gwen S3)
+- `"any"` --- works against any troop type, but doesn't do splash like `"all"`
 - specific type (`"lancer"`, `"marksmen"`, etc.) --- hit that type only (e.g. Wayne S2)
 
 Fan-out to all enemy types has been **confirmed correct** via in-game battle detail analysis:
 - Primary target IS hit by extra damage (confirmed: Norah S2 in infantry-only scenario attributed S2 kills to infantry --- the only target available)
 - Non-primary types ARE also hit (confirmed: marksmen took casualties from lancer-based S2 while infantry line was still standing --- impossible without fan-out)
 
-**Important:** When an extra attack should only hit whoever the unit is already fighting, use `benefit_vs: "target"`, NOT `"all"`. Using `"all"` causes the extra attack to fan out to all enemy types.
+**Important:** When an extra attack should only hit whoever the unit is already fighting, use `benefit_vs: "target"` or `benefit_vs: "any"`, NOT `"all"`. Using `"all"` causes the extra attack to fan out to all enemy types.
 
 ## `benefit_vs` Semantics for Regular Effects
 

@@ -15,7 +15,7 @@ Build a battle simulator that perfectly replicates the WOS in-game battle engine
 | Simulator code | `{config.simulator_dir}` |
 | Per-hero skill JSON | `{config.simulator_dir}/assets/hero_skills/` |
 | Captured hero skills | `data/player_hero_skills.json` (relative to this file) |
-| Battle specs | `testcases/` (relative to this file) |
+| Battle specs | `testcase_spec/` (relative to this file). **Write all hand-authored battle specs here** — do NOT write to the simulator repo's `testcases/` (that directory is reserved for emulator-captured ground truth). |
 | Emulator-verified testcases | `{config.simulator_dir}/testcases/emulator_verified/` |
 | Testcase runner | `{config.simulator_dir}/check_testcases.py` |
 
@@ -44,6 +44,7 @@ Read the files relevant to your current task. The summary tells you what each co
 | [wosctl-operations.md](knowledge/wosctl-operations.md) | Golden rules, run-testcase automation, instance config, common workflows, hero template registration, troubleshooting | You are running emulator commands or diagnosing wosctl issues |
 | [spec-design.md](knowledge/spec-design.md) | Pipeline continuity, pre-spec checklist (incl. hero class compatibility check), spec template, naming conventions, validation progression, batch strategy | You are designing battle specs for the test pipeline |
 | [anti-patterns.md](knowledge/anti-patterns.md) | 12 hard-won lessons on what NOT to do --- data assumptions, metric mistakes, architecture traps | Before starting any task (quick scan) and when debugging unexpected behavior |
+| [accuracy_dashboard.md](knowledge/accuracy_dashboard.md) | Local Next.js dashboard that records every `check_testcases.py` run to `test_results/dashboard.sqlite`; schema overview, coverage report, dirty-run diff viewer, adding new charts | You need to run, understand, extend, or debug the accuracy dashboard |
 
 ## Rate Limits
 
@@ -60,4 +61,4 @@ When you complete a task that yields reusable insights:
 3. **Update this index if needed.** If your change alters the scope of a topic file (e.g., it now covers something new), update the summary in the table above. If you create a new topic file, add a row to the table.
 4. **Never let the index go stale.** The index is the entry point for all agents. If it doesn't accurately describe what's in each file, agents will miss relevant information or waste time reading irrelevant files. Treat index accuracy as a first-class responsibility --- as important as the knowledge itself.
 
-*Last updated: 2026-04-18 (WOS-136 accept-residual: Alonso_tc daut_viper_1/2 whitelisted as documented structural limitation)*
+*Last updated: 2026-04-19 (WOS-162 follow-up: renamed `testcases/` → `testcase_spec/` in this skill to disambiguate from the simulator repo's ground-truth `testcases/` directory).*

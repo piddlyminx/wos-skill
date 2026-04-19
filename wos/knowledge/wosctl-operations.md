@@ -23,7 +23,7 @@ You do NOT need to do these manually:
 ### Running a Testcase End-to-End
 
 ```bash
-wosctl --instance <name> run-testcase ./testcases/hero_solo.json  # full pipeline
+wosctl --instance <name> run-testcase ./testcase_spec/hero_solo.json  # full pipeline
 ```
 
 ### Reading Battle Reports

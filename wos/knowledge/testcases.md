@@ -2,7 +2,7 @@
 
 ## Spec vs. Testcase
 
-- A **spec** (`testcases/*.json` in the wos skill) defines the battle setup: which emulator instances, troop compositions, and hero assignments. Specs do NOT contain stats or hero skill levels.
+- A **spec** (`testcase_spec/*.json` in the wos skill) defines the battle setup: which emulator instances, troop compositions, and hero assignments. Specs do NOT contain stats or hero skill levels. Specs live ONLY here in the skill — never write spec files into the simulator repo's `testcases/` directory (that path is reserved for emulator-captured ground truth and `wosctl run-testcase` is the only tool permitted to write to it).
 - A **testcase** (`testcases/emulator_verified/*.json` in the simulator repo) is the result: spec + actual stats from the battle report + game results + simulator results.
 
 ## Why Testcases Are One-Way
@@ -12,9 +12,47 @@ Stats are point-in-time snapshots. If a player researches something, upgrades a 
 ## Testcase Integrity Rules
 
 1. **Never alter testcases.** They are ground truth. If corrupted or outdated, retire and re-run the spec.
-2. **Same spec, different results.** If stats or hero skill levels have changed, the spec produces a new testcase.
+2. **Same spec, different results.** If stats or hero skill levels have changed, the spec produces a new testcase entry — not a reason to retire the old one.
 3. **`_nc` suffix** = deterministic (no chance skills). Single game run is sufficient.
 4. **No `_nc` suffix** = RNG-dependent. Multiple game runs needed.
+
+## Mandatory Pre-Retirement Checklist
+
+**Before retiring any testcase, you MUST work through every item.** Retirement is irreversible. The most common error is confusing a simulator bug with a stale testcase.
+
+### Step 1 — Is the retirement reason valid?
+
+Tick ONE valid reason. If you cannot tick any, do not retire.
+
+- [ ] **Game mechanic changed.** The in-game skill effect was redesigned (different `effect_type`, chance vs. deterministic, duration, targeting). The simulator implements the new mechanic and has no path to reproduce the old one. Verify via `git log --follow assets/hero_skills/<Hero>.json` — a change in `effect_type`, `extra_attack`, or `effect_is_chance` in a commit tagged "game update" or the repo's first commit (pre-repo era) is the clearest signal.
+- [ ] **Testcase data is corrupted.** OCR errors, misidentified heroes, wrong troop counts, or a wosctl capture bug produced physically implausible results (e.g. more survivors than attackers).
+- [ ] **Testcase design is fundamentally flawed.** The spec cannot produce meaningful signal regardless of how many runs are taken (e.g. zero expected casualties, hero class conflict captured by mistake).
+- [ ] **Coverage superseded and data confirmed consistent.** A newer testcase covers identical conditions, and the new results are statistically consistent with the old ones, making the old entry redundant.
+
+### Step 2 — Confirm the invalid reasons do NOT apply
+
+Check that you are NOT retiring for any of these reasons (all invalid):
+
+- [ ] "The player's stats are different now." — The testcase snapshot is frozen. The simulator uses it as-is. Irrelevant.
+- [ ] "The player's hero skill levels are different now." — Same. Frozen snapshot. Irrelevant.
+- [ ] "I cannot recapture this testcase." — Recapture infeasibility is never a retirement reason on its own.
+- [ ] "The testcase is diverging." — A divergence is a potential **simulator bug**, not automatic grounds for retirement. Investigate the sim first.
+
+### Step 3 — For diverging testcases: rule out simulator bug first
+
+If a divergence triggered this review, answer both questions before concluding the testcase is stale:
+
+1. **Has the game mechanic visibly changed?** Check `git log --follow assets/hero_skills/<Hero>.json`. Look for `effect_type`, `effect_is_chance`, `extra_attack`, `duration_value` changes that reflect a real in-game redesign.
+2. **Could a sim bug explain the divergence?** Check `knowledge/known-issues.md`. If the divergence appeared after a simulator-side commit (new semantics, refactor), that is a sim bug, not a stale testcase.
+
+If the answer to (1) is no and (2) is yes → file a simulator bug. Do not retire the testcase.
+
+### Step 4 — Write the retirement comment
+
+When retiring, state explicitly:
+- Which valid reason from Step 1 applies
+- The specific evidence (commit hash, description of corruption, etc.)
+- What replaces coverage of this spec (or note that coverage is intentionally dropped)
 
 ## Designing Good Testcases
 

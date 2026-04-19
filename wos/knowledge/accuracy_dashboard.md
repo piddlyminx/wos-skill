@@ -60,10 +60,12 @@ When a run is tagged `dirty = 1`, the run-detail page (`/runs/[id]`) shows an in
 
 The page automatically computes the most useful diff to display:
 
-- **Same git SHA, previous run also dirty**: the page shows only the *incremental delta* — what changed in the code between the two dirty runs — under the label **"Code Changes Since Previous Run"**. This is computed client-side using the `diff` npm package by reconstructing the "before" state from the previous run's patch and comparing it to the current run's patched state.
-- **Different git SHA, previous run also dirty**: the page falls back to the full cumulative patch (vs clean baseline) with a yellow warning banner: *"Previous run used a different git baseline — showing full cumulative patch instead of incremental delta."*
+- **Previous run also dirty (same OR different git SHA)**: the page shows the *incremental delta* under the label **"Code Changes Since Previous Run"**. For each file referenced in either patch, `computeCrossShaDiff` (see `dashboard/web/lib/diff.ts`) reads the file at the recorded SHA via `git show <sha>:<file>`, applies that run's patch, and emits a per-file reconciled diff between the two reconstructed states. The same-SHA case reduces to the old `reconstructBefore` path.
+- **Dangling SHA (rebased/amended away)**: per-file `git show` fails, so the helper falls back to same-baseline reconstruction from the patch alone and surfaces a yellow banner: *"Baseline commits X and Y no longer in git history — N files reconstructed without baseline; results are best-effort."* Results are approximate but still useful.
 - **Previous run dirty but has no stored patch**: falls back to cumulative patch with a warning: *"Previous run has no stored patch — showing full cumulative patch."*
-- **Previous run is clean, or there is no previous run**: shows the full stored patch labelled **"Dirty State Patch (vs clean baseline)"**.
+- **Previous run is clean, or there is no previous run**: shows the full stored patch behind a `Show Raw Dirty State Patch (vs Clean Baseline)` collapsible.
+
+The `/compare/[a]/[b]` page follows the same reconstruction under a single `Code Changes (Run A → Run B)` header. Raw per-run patches are preserved for forensic inspection under a `Show raw per-run patches` collapsible.
 
 ### Manually extracting the raw stored blob
 

@@ -90,8 +90,8 @@ Known pet names:
 ## Run Testcase
 
 ```bash
-"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcases/<name>.json
-"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcases/<name>.json --dry-run
+"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcase_spec/<name>.json
+"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcase_spec/<name>.json --dry-run
 ```
 
 ### run-testcase rules
