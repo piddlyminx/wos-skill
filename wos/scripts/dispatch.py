@@ -532,40 +532,32 @@ def deploy_army(emulator: WosEmulator, army_spec: dict) -> dict:
     if unknown_troops:
         raise WosDispatchError(f"Unknown troop type(s): {unknown_troops}. Known: {list(TROOP_DISPLAY_NAMES)}")
 
-    # ── Step 1: Tap Preset 1 to clear slate ───────────────────────────────────
-    logger.info("deploy_army: tapping Preset 1 to clear")
-    _find_and_tap(emulator, TPL_PRESET1, "Preset1")
+    # ── Step 1: Clear heroes by tapping hero slot 1 and removing (if visible) ────────────────────────────────
+    logger.info("deploy_army: clearing hero slots by tapping Preset 1")
+    slot_x, slot_y = _HERO_SLOTS[0]
+    emulator.tap(slot_x, slot_y)
     time.sleep(2)
+
+    # If a hero is already assigned to this slot, Remove it first
+    img = emulator.screencap_bgr()
+    remove_found, (rx, ry) = find_template(img, TPL_HERO_REMOVE)
+    if remove_found:
+        logger.info("deploy_army: slot 1 has existing hero — tapping Remove at (%d,%d)", rx, ry)
+        emulator.tap(rx, ry)
+        time.sleep(1.5)
 
     # ── Step 5: Assign heroes ─────────────────────────────────────────────────
     for slot_idx, (hero_name, _hero_levels) in enumerate(heroes.items()):
         logger.info("deploy_army: assigning hero %d/%d: %s", slot_idx + 1, len(heroes), hero_name)
 
-        # Tap the hero slot (+ button)
-        slot_x, slot_y = _HERO_SLOTS[slot_idx]
-        emulator.tap(slot_x, slot_y)
-        time.sleep(2)
-
-        # If a hero is already assigned to this slot, Remove it first
-        img = emulator.screencap_bgr()
-        remove_found, (rx, ry) = find_template(img, TPL_HERO_REMOVE)
-        if remove_found:
-            logger.info("deploy_army: slot %d has existing hero — tapping Remove at (%d,%d)", slot_idx + 1, rx, ry)
-            emulator.tap(rx, ry)
-            time.sleep(1.5)
-            # Re-tap slot to reopen picker
-            emulator.tap(slot_x, slot_y)
-            time.sleep(2)
-
         # Find and assign the hero
         _assign_hero(emulator, hero_name)
         time.sleep(1)
 
-    # Close hero picker if it was opened (only if heroes were assigned)
-    if heroes:
-        logger.info("deploy_army: closing hero picker")
-        emulator.shell("input keyevent 4")
-        time.sleep(1.5)
+    # Close hero picker
+    logger.info("deploy_army: closing hero picker")
+    emulator.shell("input keyevent 4")
+    time.sleep(1.5)
 
     # ── Step 5b: Withdraw All default troops (if button is visible) ───────────
     img = emulator.screencap_bgr()

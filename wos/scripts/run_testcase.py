@@ -140,6 +140,25 @@ def _enrich_heroes(hero_list: list, instance_name: str, _retried: bool = False) 
     }
 
 
+def _validate_hero_names(spec_heroes: dict, actual_heroes: dict, side: str) -> None:
+    """Fail when the actual hero names do not match the hero names requested in the spec."""
+    expected = set(spec_heroes.keys())
+    actual = set(actual_heroes.keys())
+    if expected == actual:
+        return
+
+    missing = sorted(expected - actual)
+    unexpected = sorted(actual - expected)
+    parts = [f"{side} hero mismatch"]
+    if missing:
+        parts.append(f"missing from report: {missing}")
+    if unexpected:
+        parts.append(f"unexpected on report: {unexpected}")
+    parts.append(f"expected={sorted(expected)}")
+    parts.append(f"actual={sorted(actual)}")
+    raise RuntimeError("; ".join(parts))
+
+
 def _wosctl(*args: str, timeout: int = 180) -> dict:
     """Run wosctl and return parsed JSON output."""
     cmd = [_WOSCTL] + list(args)
@@ -327,6 +346,8 @@ def run_testcase(spec_path: str, dry_run: bool = False) -> dict:
     # Build this run's parameters for comparison
     atk_heroes = _enrich_heroes(atk_rep.get("heroes", []) or [], atk_instance)
     def_heroes = _enrich_heroes(def_rep.get("heroes", []) or [], def_instance)
+    _validate_hero_names(spec["attacker"].get("heroes", {}), atk_heroes, "Attacker")
+    _validate_hero_names(spec["defender"].get("heroes", {}), def_heroes, "Defender")
     this_run_stats = emulator_result["attacker_stats"]
     this_run_def_stats = emulator_result["defender_stats"]
     # Use ACTUAL troop counts from war report, not the spec — the player may not

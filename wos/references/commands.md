@@ -90,12 +90,13 @@ Known pet names:
 ## Run Testcase
 
 ```bash
-"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcase_spec/<name>.json
-"$WOS_DIR/scripts/wosctl" --instance <name> run-testcase ./testcase_spec/<name>.json --dry-run
+"$WOS_DIR/scripts/wosctl" run-testcase ./testcase_spec/<name>.json
+"$WOS_DIR/scripts/wosctl" run-testcase ./testcase_spec/<name>.json --dry-run
 ```
 
 ### run-testcase rules
 - Spec JSON must include `emulator.attacker.instance`, `emulator.defender.instance`, `attacker.troops`, `defender.troops`.
+- `run-testcase` reads emulator instances from the spec, so `--instance` is not required.
 - Heroes in the spec are optional; if omitted, no heroes are deployed.
 - Note spec JSON must *NOT* contain stats or hero skill levels. 
 - After the battle, hero names from the report are automatically enriched with skill levels from `data/player_hero_skills.json` before saving the testcase.

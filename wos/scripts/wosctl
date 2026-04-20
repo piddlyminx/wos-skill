@@ -37,7 +37,7 @@ Commands:
   shell <cmd...>      Run an adb shell command and print output
 
 Global options:
-  --instance <name>  Instance name as shown in MuMuManager. Required for all commands except status.
+  --instance <name>  Instance name as shown in MuMuManager. Required except for status and run-testcase.
 """
 from __future__ import annotations
 
@@ -868,7 +868,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--instance", "-i",
         default=None,
         metavar="<name>",
-        help="Instance name as shown in MuMuManager (required except for status)",
+        help="Instance name as shown in MuMuManager (required except for status and run-testcase)",
     )
     parser.add_argument(
         "--debug",
@@ -936,6 +936,18 @@ def main() -> int:
     if args.command == "status":
         return cmd_status(args.instance)
 
+    if args.command == "run-testcase":
+        try:
+            from run_testcase import run_testcase
+        except Exception as exc:
+            return _fail(f"run-testcase import failed: {exc}", command="run-testcase")
+        try:
+            result = run_testcase(args.spec, dry_run=args.dry_run)
+            _emit(result)
+            return 0
+        except Exception as exc:
+            return _fail(str(exc), command="run-testcase", spec=args.spec)
+
     try:
         instance_name = _require_instance_name(args.instance)
     except WosError as exc:
@@ -964,18 +976,6 @@ def main() -> int:
 
     if args.command == "deploy-army":
         return cmd_deploy_army(instance_name, args.army, args.tile_x, args.tile_y, args.mode)
-
-    if args.command == "run-testcase":
-        try:
-            from run_testcase import run_testcase
-        except Exception as exc:
-            return _fail(f"run-testcase import failed: {exc}", command="run-testcase")
-        try:
-            result = run_testcase(args.spec, dry_run=args.dry_run)
-            _emit(result)
-            return 0
-        except Exception as exc:
-            return _fail(str(exc), command="run-testcase", spec=args.spec)
 
     if args.command == "screencap":
         return cmd_screencap(instance_name, args.path)

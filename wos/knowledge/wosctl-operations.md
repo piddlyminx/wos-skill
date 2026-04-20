@@ -3,7 +3,7 @@
 ## Golden Rules
 
 1. **Always use `wosctl`.** Never run raw `adb` commands or `scripts/*.py` directly.
-2. **Always specify `--instance <name>`.
+2. **Specify `--instance <name>` for all commands except `status` and `run-testcase`.** `run-testcase` reads attacker/defender instances from the spec file.
 
 ## What `run-testcase` Does Automatically
 
@@ -23,7 +23,7 @@ You do NOT need to do these manually:
 ### Running a Testcase End-to-End
 
 ```bash
-wosctl --instance <name> run-testcase ./testcase_spec/hero_solo.json  # full pipeline
+wosctl run-testcase ./testcase_spec/hero_solo.json  # full pipeline
 ```
 
 ### Reading Battle Reports
