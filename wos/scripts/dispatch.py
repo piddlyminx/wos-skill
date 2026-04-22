@@ -94,14 +94,14 @@ TROOP_DISPLAY_NAMES: dict[str, str] = {
 _PILL_X = 430
 
 # ─── Hero scroll constants ─────────────────────────────────────────────────────
-# Swipe from y=750 to y=1000 scrolls UP through the hero list (earlier heroes appear)
-# Swipe from y=1000 to y=750 scrolls DOWN (later heroes appear)
-# NOTE: hero popup ends around y=900; swipes must start/end within the popup or
-# they land on the background and have no effect.
-_SCROLL_UP_FROM_Y   = 720   # drag start (scroll UP to see earlier heroes)
-_SCROLL_UP_TO_Y     = 820
-_SCROLL_DOWN_FROM_Y = 820   # drag start (scroll DOWN to see later heroes)
-_SCROLL_DOWN_TO_Y   = 720
+# Hero list (scrollable grid) occupies roughly y=590–900 on the popup.
+# Use 240px swipes within that range (640–880) to move ~1.6 hero rows per scroll.
+# 100px swipes (the old default) only moved ~0.6 rows — too little to reach
+# low-power heroes (e.g. Zinman) after 2 higher-power heroes are already assigned.
+_SCROLL_UP_FROM_Y   = 640   # drag start (scroll UP to see earlier heroes)
+_SCROLL_UP_TO_Y     = 880
+_SCROLL_DOWN_FROM_Y = 880   # drag start (scroll DOWN to see later heroes)
+_SCROLL_DOWN_TO_Y   = 640
 _SCROLL_X           = 360
 _HERO_SWIPE_DUR_MS  = 750   # slower = less momentum/overshoot
 
@@ -532,19 +532,37 @@ def deploy_army(emulator: WosEmulator, army_spec: dict) -> dict:
     if unknown_troops:
         raise WosDispatchError(f"Unknown troop type(s): {unknown_troops}. Known: {list(TROOP_DISPLAY_NAMES)}")
 
-    # ── Step 1: Clear heroes by tapping hero slot 1 and removing (if visible) ────────────────────────────────
-    logger.info("deploy_army: clearing hero slots by tapping Preset 1")
+    # ── Step 1: Clear ALL hero slots, keeping picker open throughout ─────────
+    # Open picker via Slot 1 first, then switch slot focus by tapping slot
+    # buttons (WITHOUT pressing Back — Back exits the deploy screen to the map).
+    logger.info("deploy_army: clearing all hero slots via picker slot-switching")
     slot_x, slot_y = _HERO_SLOTS[0]
     emulator.tap(slot_x, slot_y)
     time.sleep(2)
 
-    # If a hero is already assigned to this slot, Remove it first
-    img = emulator.screencap_bgr()
-    remove_found, (rx, ry) = find_template(img, TPL_HERO_REMOVE)
-    if remove_found:
-        logger.info("deploy_army: slot 1 has existing hero — tapping Remove at (%d,%d)", rx, ry)
-        emulator.tap(rx, ry)
-        time.sleep(1.5)
+    for _slot_idx in range(3):
+        slot_x, slot_y = _HERO_SLOTS[_slot_idx]
+        logger.info("deploy_army: inspecting slot %d at (%d,%d)", _slot_idx + 1, slot_x, slot_y)
+        # Switch picker focus to this slot (tap slot button while picker is open).
+        # For slot 0 this is a no-op (already focused), but harmless to re-tap.
+        if _slot_idx > 0:
+            emulator.tap(slot_x, slot_y)
+            time.sleep(1.5)
+
+        img = emulator.screencap_bgr()
+        remove_found, (rx, ry) = find_template(img, TPL_HERO_REMOVE)
+        if remove_found:
+            logger.info("deploy_army: slot %d has existing hero — tapping Remove at (%d,%d)", _slot_idx + 1, rx, ry)
+            emulator.tap(rx, ry)
+            time.sleep(1.5)
+        else:
+            logger.info("deploy_army: slot %d is empty — no hero to remove", _slot_idx + 1)
+
+    # Switch back to Slot 1 so the assign loop fills from the first slot.
+    logger.info("deploy_army: focusing picker on slot 1 for hero assignment")
+    slot_x, slot_y = _HERO_SLOTS[0]
+    emulator.tap(slot_x, slot_y)
+    time.sleep(2)
 
     # ── Step 5: Assign heroes ─────────────────────────────────────────────────
     for slot_idx, (hero_name, _hero_levels) in enumerate(heroes.items()):
